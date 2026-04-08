@@ -6,6 +6,13 @@ RUN apt-get update && \
         build-essential nodejs npm python3 python3-pip ripgrep ffmpeg gcc python3-dev libffi-dev && \
     rm -rf /var/lib/apt/lists/*
 
+# Local fork additions for Yifei's hermes install on Yifeis-MacBook-Pro-16:
+# - claude-code: official Anthropic CLI, used by the bundled `claude-code` skill.
+#   TOS-compliant when invoked as `claude -p '...'` (see README-hermes.md).
+# - uv: provides `uvx` for ephemeral Python MCP servers (mcp-server-time, mcp-server-fetch).
+RUN npm install -g @anthropic-ai/claude-code && \
+    pip install --no-cache-dir --break-system-packages uv
+
 COPY . /opt/hermes
 WORKDIR /opt/hermes
 
