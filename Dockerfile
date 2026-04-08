@@ -27,6 +27,19 @@ RUN pip install --no-cache-dir -e ".[all]" --break-system-packages && \
 WORKDIR /opt/hermes
 RUN chmod +x /opt/hermes/docker/entrypoint.sh
 
+# Run as a non-root user. claude-code refuses --dangerously-skip-permissions
+# (and the equivalent --permission-mode bypassPermissions) when running as
+# root, which makes claude unusable from the agent's terminal tool inside the
+# container without weaker per-tool flags. A dedicated `hermes` user (uid 1000)
+# fixes that and is good practice in general. /opt/hermes is chowned so the
+# entrypoint can read the install tree and bundled skills/configs.
+RUN useradd -m -u 1000 -s /bin/bash hermes && \
+    chown -R hermes:hermes /opt/hermes && \
+    mkdir -p /home/hermes/.cache && \
+    chown -R hermes:hermes /home/hermes
+USER hermes
+
+ENV HOME=/home/hermes
 ENV HERMES_HOME=/opt/data
 VOLUME [ "/opt/data" ]
 ENTRYPOINT [ "/opt/hermes/docker/entrypoint.sh" ]
