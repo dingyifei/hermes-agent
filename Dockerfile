@@ -230,7 +230,8 @@ GHWRAPPER
 # Configure git system-wide to use the credential helper for all users.
 # This survives the USER hermes switch below — system config is read by
 # any user running git.
-RUN git config --system credential.helper /usr/local/bin/git-credential-broker
+RUN git config --system credential.helper /usr/local/bin/git-credential-broker && \
+    git config --system credential.useHttpPath true
 
 COPY . /opt/hermes
 WORKDIR /opt/hermes
