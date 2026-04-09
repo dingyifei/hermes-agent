@@ -98,15 +98,26 @@ op="${1:-}"
 if [ "$op" != "get" ]; then
     exit 0
 fi
+# git invokes credential helpers via `sh -c <helper>` (see git's
+# run-command.c), so direct parent is dash/sh on Debian. Walk up ONE
+# level when the direct parent is a shell to find the real git invoker.
 parent_exe=""
 if [ -e "/proc/$PPID/exe" ]; then
     parent_exe=$(readlink "/proc/$PPID/exe" 2>/dev/null || echo "")
 fi
 case "$parent_exe" in
+    /usr/bin/dash|/bin/dash|/usr/bin/sh|/bin/sh|/usr/bin/bash|/bin/bash)
+        grandparent_pid=$(awk '/^PPid:/{print $2}' "/proc/$PPID/status" 2>/dev/null || echo "")
+        if [ -n "$grandparent_pid" ] && [ -e "/proc/$grandparent_pid/exe" ]; then
+            parent_exe=$(readlink "/proc/$grandparent_pid/exe" 2>/dev/null || echo "")
+        fi
+        ;;
+esac
+case "$parent_exe" in
     /usr/bin/git|/usr/local/bin/git|/usr/libexec/git-core/*)
         ;;
     *)
-        echo "git-credential-broker: refusing — parent exe ($parent_exe) is not git" >&2
+        echo "git-credential-broker: refusing — process tree does not contain git ($parent_exe)" >&2
         exit 0
         ;;
 esac
