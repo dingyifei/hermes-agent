@@ -114,7 +114,7 @@ case "$parent_exe" in
         ;;
 esac
 case "$parent_exe" in
-    /usr/bin/git|/usr/local/bin/git|/usr/libexec/git-core/*)
+    /usr/bin/git|/usr/local/bin/git|/usr/libexec/git-core/*|/usr/lib/git-core/*)
         ;;
     *)
         echo "git-credential-broker: refusing — process tree does not contain git ($parent_exe)" >&2
