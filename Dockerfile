@@ -140,9 +140,9 @@ req = {
     "caller_parent_comm": parent_comm,
 }
 try:
-    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(5.0)
-    s.connect("/run/broker/broker.sock")
+    s.connect(("host.docker.internal", 9876))
     s.sendall((json.dumps(req) + "\n").encode())
     buf = b""
     while b"\n" not in buf and len(buf) < 64 * 1024:
@@ -192,9 +192,9 @@ req = {
     "caller_parent_comm": open(f"/proc/{os.getppid()}/comm").read().strip() if os.path.exists(f"/proc/{os.getppid()}/comm") else "",
 }
 try:
-    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(5.0)
-    s.connect("/run/broker/broker.sock")
+    s.connect(("host.docker.internal", 9876))
     s.sendall((json.dumps(req) + "\n").encode())
     buf = b""
     while b"\n" not in buf and len(buf) < 64 * 1024:
