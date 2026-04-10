@@ -220,6 +220,7 @@ if not _configured_cwd or _configured_cwd in (".", "auto", "cwd"):
     os.environ["TERMINAL_CWD"] = messaging_cwd
 
 from gateway.config import (
+    HomeChannel,
     Platform,
     GatewayConfig,
     load_gateway_config,
@@ -4052,6 +4053,13 @@ class GatewayRunner:
                 raise
             # Take effect immediately in the current process
             os.environ[env_key] = str(chat_id)
+            # Update the live config so get_home_channel() works without restart
+            if source.platform and source.platform in self.config.platforms:
+                self.config.platforms[source.platform].home_channel = HomeChannel(
+                    platform=source.platform,
+                    chat_id=str(chat_id),
+                    name=str(chat_name),
+                )
         except Exception as e:
             return f"Failed to save home channel: {e}"
 
