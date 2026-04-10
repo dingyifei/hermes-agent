@@ -4003,29 +4003,58 @@ class GatewayRunner:
         return f"↩️ Undid {removed_count} message(s).\nRemoved: \"{preview}\""
     
     async def _handle_set_home_command(self, event: MessageEvent) -> str:
-        """Handle /sethome command -- set the current chat as the platform's home channel."""
+        """Handle /sethome command -- set the current chat as the platform's home channel.
+
+        Persists to .env (simple key=value, no YAML comments to mangle).
+        The gateway already loads .env into os.environ on startup, so the
+        value survives restarts without touching config.yaml.
+        """
         source = event.source
         platform_name = source.platform.value if source.platform else "unknown"
         chat_id = source.chat_id
         chat_name = source.chat_name or chat_id
-        
+
         env_key = f"{platform_name.upper()}_HOME_CHANNEL"
-        
-        # Save to config.yaml
+
+        # Persist to .env — read existing lines, update or append the key,
+        # write back atomically.
         try:
-            import yaml
-            config_path = _hermes_home / 'config.yaml'
-            user_config = {}
-            if config_path.exists():
-                with open(config_path, encoding="utf-8") as f:
-                    user_config = yaml.safe_load(f) or {}
-            user_config[env_key] = chat_id
-            atomic_yaml_write(config_path, user_config)
-            # Also set in the current environment so it takes effect immediately
+            env_path = _hermes_home / '.env'
+            lines: list[str] = []
+            found = False
+            if env_path.exists():
+                lines = env_path.read_text(encoding="utf-8").splitlines()
+                for i, line in enumerate(lines):
+                    if line.startswith(f"{env_key}="):
+                        lines[i] = f"{env_key}={chat_id}"
+                        found = True
+                        break
+            if not found:
+                if lines and lines[-1] != "":
+                    lines.append("")  # blank separator
+                lines.append(f"# Home channel for {platform_name} (set by /sethome)")
+                lines.append(f"{env_key}={chat_id}")
+            # Atomic write via temp + replace
+            fd, tmp_path = tempfile.mkstemp(
+                dir=str(env_path.parent), prefix=".env_", suffix=".tmp",
+            )
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    f.write("\n".join(lines) + "\n")
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(tmp_path, str(env_path))
+            except BaseException:
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
+                raise
+            # Take effect immediately in the current process
             os.environ[env_key] = str(chat_id)
         except Exception as e:
             return f"Failed to save home channel: {e}"
-        
+
         return (
             f"✅ Home channel set to **{chat_name}** (ID: {chat_id}).\n"
             f"Cron jobs and cross-platform messages will be delivered here."
