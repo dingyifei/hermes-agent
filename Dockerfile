@@ -68,7 +68,7 @@ GITWRAPPER
 # hermes so it can import hermes modules directly. It has minimal Python deps
 # (only pyyaml + stdlib); the agent functionality all comes from the hermes
 # install. Runs as a sibling service in docker-compose.
-RUN git clone --branch v0.45.0 https://github.com/dingyifei/hermes-webui.git /opt/hermes-webui && \
+RUN git clone --branch v0.49.1 https://github.com/dingyifei/hermes-webui.git /opt/hermes-webui && \
     pip install --no-cache-dir --break-system-packages -r /opt/hermes-webui/requirements.txt
 
 # =============================================================================
