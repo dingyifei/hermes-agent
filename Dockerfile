@@ -219,8 +219,10 @@ exec "$REAL_GH" "$@"
 GHWRAPPER
 
 # Configure git system-wide to use the credential helper.
+# Also mark /opt/hermes-webui as safe so git describe works after gosu UID remap.
 RUN git config --system credential.helper /usr/local/bin/git-credential-broker && \
-    git config --system credential.useHttpPath true
+    git config --system credential.useHttpPath true && \
+    git config --system --add safe.directory /opt/hermes-webui
 
 # Hand ownership to hermes user, then install Python deps in a virtualenv
 RUN chown -R hermes:hermes /opt/hermes /opt/hermes-webui
@@ -231,7 +233,13 @@ RUN uv venv && \
     uv pip install --no-cache-dir -r /opt/hermes-webui/requirements.txt
 
 USER root
-RUN chmod +x /opt/hermes/docker/entrypoint.sh
+RUN chmod +x /opt/hermes/docker/entrypoint.sh && \
+    ln -s /opt/hermes/.venv/bin/hermes /usr/local/bin/hermes && \
+    mkdir -p /opt/data/home && \
+    ln -s /opt/data/.claude /opt/data/home/.claude && \
+    ln -s /opt/data/.claude.json /opt/data/home/.claude.json && \
+    ln -s /opt/data/.claude /root/.claude && \
+    ln -s /opt/data/.claude.json /root/.claude.json
 
 ENV HERMES_HOME=/opt/data
 VOLUME [ "/opt/data" ]
