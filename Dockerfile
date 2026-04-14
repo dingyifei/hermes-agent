@@ -226,8 +226,10 @@ exec "$REAL_GH" "$@"
 GHWRAPPER
 
 # Configure git system-wide to use the credential helper.
+# Also mark /opt/hermes-webui as safe so git describe works after gosu UID remap.
 RUN git config --system credential.helper /usr/local/bin/git-credential-broker && \
-    git config --system credential.useHttpPath true
+    git config --system credential.useHttpPath true && \
+    git config --system --add safe.directory /opt/hermes-webui
 
 # Build web dashboard (Vite outputs to hermes_cli/web_dist/)
 RUN cd web && npm run build
@@ -238,6 +240,18 @@ USER hermes
 RUN uv venv && \
     uv pip install --no-cache-dir -e ".[all]" && \
     uv pip install --no-cache-dir -r /opt/hermes-webui/requirements.txt
+
+# Switch back to root for entrypoint setup: hermes CLI symlink + claude
+# state symlinks under /opt/data/home and /root (so claude finds its config
+# regardless of which HOME the subprocess sees).
+USER root
+RUN chmod +x /opt/hermes/docker/entrypoint.sh && \
+    ln -s /opt/hermes/.venv/bin/hermes /usr/local/bin/hermes && \
+    mkdir -p /opt/data/home && \
+    ln -s /opt/data/.claude /opt/data/home/.claude && \
+    ln -s /opt/data/.claude.json /opt/data/home/.claude.json && \
+    ln -s /opt/data/.claude /root/.claude && \
+    ln -s /opt/data/.claude.json /root/.claude.json
 
 # ---------- Runtime ----------
 ENV HERMES_WEB_DIST=/opt/hermes/hermes_cli/web_dist
