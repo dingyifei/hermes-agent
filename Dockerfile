@@ -88,7 +88,7 @@ GITWRAPPER
 
 # hermes-webui (from Yifei's fork), installed into the same Python env as
 # hermes so it can import hermes modules directly.
-RUN git clone --branch v0.50.23 https://github.com/dingyifei/hermes-webui.git /opt/hermes-webui
+RUN git clone --branch v0.51.160 https://github.com/dingyifei/hermes-webui.git /opt/hermes-webui
 
 # Credential broker client scripts — git-credential-broker + gh wrapper.
 # The host-side broker daemon listens on TCP 127.0.0.1:9876; these client
